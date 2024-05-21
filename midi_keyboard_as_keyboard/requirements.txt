@@ -1,3 +1,5 @@
 python-rtmidi
 mido
 pygame
+tk
+pillow
