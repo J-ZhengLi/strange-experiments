@@ -1,5 +1,7 @@
 # strange-experiments
 
+> Just some personal fun projects to remind me why did I choose to be a programmer.
+
 Well, since I have a very short attention span, it's often embarrassing seeing all those unfinished project in my repositories...
 Then when I look back I always got confused of wth are those and why I did it 🤷.
 

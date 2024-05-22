@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 
-"""
-TODO: Now that the midi keyboard can be successfully connected,
-find out how to emulate keyboard pressing next
-"""
-
 import mido
+import pyautogui
+
+# TODO: load a complete map from a file instead.
+# There is a `pyautogui.KEYBOARD_KEYS` but there are too many (194 keys), gotta strip some of them.
+KEY_MAP = {
+    69: "space",
+    70: "backspace",
+}
 
 def main():
     ports = mido.get_input_names()
@@ -25,12 +28,25 @@ def main():
                 # as `ctrl+c/z` are not working lol.
                 if msg.note == 21:
                     break
-                print("message:", msg)
+                handle_note(msg.note, msg.type == "note_on")
+                
     except IndexError as ie:
         raise ie
     except ValueError:
         print(f"input '{idx}' is not an integer")
 
+
+def handle_note(note, pressed=True):
+    related_key = KEY_MAP.get(note)
+    
+    if pressed:
+        print("pressing:", note, ", simulating:", related_key)
+        if related_key:
+            pyautogui.keyDown(related_key)
+    else:
+        print("releasing", note, ", simulating:", related_key)
+        if related_key:
+            pyautogui.keyUp(related_key)
 
 if __name__ == '__main__':
     main()

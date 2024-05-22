@@ -1,5 +1,4 @@
-python-rtmidi
 mido
-pygame
-tk
-pillow
+
+# For simulate keyboard pressing only
+pyautogui
