@@ -1,4 +1,4 @@
 mido
 
 # For simulate keyboard pressing only
-pyautogui
+pynput
