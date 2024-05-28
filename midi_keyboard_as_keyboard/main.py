@@ -89,6 +89,7 @@ def get_key_map(port) -> dict:
 
 def key_remap(port) -> dict:
     def on_press(key):
+        global is_mapping
         if key == KeyCode.from_char('\x13'):
             is_mapping = False
             print("registering key mapping")
@@ -100,6 +101,7 @@ def key_remap(port) -> dict:
         listener.stop()
     
     key_map = dict()
+    global is_mapping
     is_mapping = True
     
     print(
@@ -108,15 +110,14 @@ def key_remap(port) -> dict:
         press '<ctrl> + q' to abort.\n"
     )
 
+    # TODO: Map the keyboards... why is this so hard?
     while is_mapping:
-        print("press a key on MIDI device:", end=" ")
+        print("press a key on MIDI device:", end=" ", flush=True)
 
-        # FIXME: This blocks thread, causing the previous `print` not working properly
         recv = port.receive()
         print("note({})".format(recv.note))
 
-        # TODO: Actual key map next! I swear
-        print("now press a key on keyboard:", end="")
+        print("now press a key on keyboard:", end="", flush=True)
         with Listener(on_press) as listener:
             listener.join()
 
