@@ -1,21 +1,15 @@
 #!/usr/bin/env python3
 
 import time
+import threading
 from os import path
-from enum import Enum
 
 import pickle
 
 import mido
-from pynput.keyboard import Key, Controller, HotKey, Listener, GlobalHotKeys
-
-class State(Enum):
-    PLAYING = 1
-    MAPPING = 2
-    IDLE = 3
+from pynput.keyboard import Key, Controller, Listener, GlobalHotKeys, Events, KeyCode
 
 keyboard = Controller()
-global_state = State.IDLE
 
 def main():
     ports = mido.get_input_names()
@@ -42,7 +36,6 @@ def main():
 
             key_map = get_key_map(port)
 
-            update_state(State.PLAYING)
             for msg in port:
                 handle_note(key_map, msg.note, msg.type == "note_on")
     except IndexError as ie:
@@ -74,15 +67,15 @@ def get_key_map(port) -> dict:
         else:
             # key mapping wizard
             print("It looks like you are running this application for the first time,")
-            ans = input("do you want to run key mapping configuration now? (y/N)").strip().lower()
-            if ans.startswith("n") or not ans:
+            ans = input("do you want to run key mapping configuration now? (Y/n)").strip().lower()
+            if ans.startswith("n"):
                 print("cannot run without key configuration, aborting...")
                 exit(1)
-            elif ans.startswith("y"):
+            elif ans.startswith("y") or not ans:
                 key_map = key_remap(port)
 
-                with open(key_map_filepath, "wb") as key_map_file:
-                    pickle.dump(key_map, key_map_file)
+                # with open(key_map_filepath, "wb") as key_map_file:
+                #     pickle.dump(key_map, key_map_file)
                 return key_map
             else:
                 print(f"invalid option '{ans}'")
@@ -94,41 +87,38 @@ def get_key_map(port) -> dict:
         raise ex
 
 
-def update_state(new_state: State):
-    global global_state
-    global_state = new_state
-
-
 def key_remap(port) -> dict:
-    def on_save():
-        update_state(State.IDLE)
+    def on_press(key):
+        if key == KeyCode.from_char('\x13'):
+            is_mapping = False
+            print("registering key mapping")
+        elif key == KeyCode.from_char('\x11'):
+            is_mapping = False
+            print("abort key mapping wizard")
+        else:
+            print("mapping key:", key)
+        listener.stop()
     
-    def on_abort():
-        key_map = dict()
-        update_state(State.IDLE)
-
-    update_state(State.MAPPING)
-
     key_map = dict()
+    is_mapping = True
     
-    # Register hotkeys
-    # with GlobalHotKeys({"<ctrl>+s": on_save, "<ctrl>+q": on_abort}) as hotkeys:
-    #     hotkeys.join()
     print(
         "follow the instructions to remap keys,\n\
         press '<ctrl> + s' to save,\n\
         press '<ctrl> + q' to abort.\n"
     )
 
-    while global_state is State.MAPPING:
+    while is_mapping:
         print("press a key on MIDI device:", end=" ")
 
+        # FIXME: This blocks thread, causing the previous `print` not working properly
         recv = port.receive()
         print("note({})".format(recv.note))
 
-        # TODO: Handle keyboard event.
+        # TODO: Actual key map next! I swear
         print("now press a key on keyboard:", end="")
-        update_state(State.IDLE)
+        with Listener(on_press) as listener:
+            listener.join()
 
     return key_map
 
