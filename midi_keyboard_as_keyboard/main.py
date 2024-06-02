@@ -7,9 +7,11 @@ from os import path
 import pickle
 
 import mido
+
+from pynput import keyboard
 from pynput.keyboard import Key, Controller, Listener, GlobalHotKeys, Events, KeyCode
 
-keyboard = Controller()
+kb = Controller()
 
 def main():
     ports = mido.get_input_names()
@@ -74,8 +76,10 @@ def get_key_map(port) -> dict:
             elif ans.startswith("y") or not ans:
                 key_map = key_remap(port)
 
-                # with open(key_map_filepath, "wb") as key_map_file:
-                #     pickle.dump(key_map, key_map_file)
+                if key_map is not None:
+                    # TODO: find a way to store this data in non-binary mode to support modification
+                    with open(key_map_filepath, "wb") as key_map_file:
+                        pickle.dump(key_map, key_map_file)
                 return key_map
             else:
                 print(f"invalid option '{ans}'")
@@ -87,22 +91,53 @@ def get_key_map(port) -> dict:
         raise ex
 
 
-def key_remap(port) -> dict:
-    def on_press(key):
+class RemapEndException(Exception):
+    def __init__(self, save=True):
+        super().__init__()
+        self.save = save
+
+
+# God... I'm so bad at python...
+# TODO: clean up this mess
+def key_remap(port) -> dict | None:
+    def finish(save: bool):
+        global save_key_map
         global is_mapping
-        if key == KeyCode.from_char('\x13'):
-            is_mapping = False
-            print("registering key mapping")
-        elif key == KeyCode.from_char('\x11'):
-            is_mapping = False
-            print("abort key mapping wizard")
-        else:
-            print("mapping key:", key)
-        listener.stop()
+        save_key_map = save
+        is_mapping = False
+
+    def on_release(key):
+        """
+        Handle kb input.
+        Returning `False` will stop the listener.
+        """
+        print("key({})".format(key))
+        print(f"mapping key note: {mapping_for} to {key}")
+        key_map[mapping_for] = key
+        return False
     
-    key_map = dict()
+    def on_meta_key_release(key):
+        """
+        Handle meta key (such as key combinations).
+        """
+        # FIXME: This function get called multiple times on pressed,
+        # I don't know why! need to investigate.
+        if key == KeyCode.from_char('\x13'):
+            print("Configuration successful!")
+            finish(True)
+        elif key == KeyCode.from_char('\x11'):
+            print("Configuration aborted, no key map will be stored.")
+            finish(False)
+
+    global save_key_map
     global is_mapping
     is_mapping = True
+    save_key_map = False
+
+    mapping_for = None
+    # Prevent the `press a key on MIDI...` got printed twice
+    print_key_prompt = True
+    key_map = dict()
     
     print(
         "follow the instructions to remap keys,\n\
@@ -110,31 +145,49 @@ def key_remap(port) -> dict:
         press '<ctrl> + q' to abort.\n"
     )
 
-    # TODO: Map the keyboards... why is this so hard?
-    while is_mapping:
-        print("press a key on MIDI device:", end=" ", flush=True)
+    try:
+        while is_mapping:
+            # Listen for meta key events at first
+            meta_listener = keyboard.Listener(on_release=on_meta_key_release)
+            meta_listener.start()
 
-        recv = port.receive()
-        print("note({})".format(recv.note))
+            if print_key_prompt:
+                print("Press a key on MIDI device:", end=" ", flush=True)
+            recv = port.receive()
+            # only care when a key is released.
+            if recv.type == "note_on":
+                print_key_prompt = False
+                continue
+            else:
+                print_key_prompt = True
+            print("note({})".format(recv.note), end=". ", flush=True)
+            mapping_for = recv.note
 
-        print("now press a key on keyboard:", end="", flush=True)
-        with Listener(on_press) as listener:
-            listener.join()
-
-    return key_map
+            print("Now pressing a key on keyboard:", end=" ", flush=True)
+            # Listen to kb input for mapping
+            with keyboard.Listener(on_release=on_release) as map_listener:
+                map_listener.join()
+    except Exception as e:
+        print("unknown exception caught when mapping keys:", e)
+    finally:
+        if save_key_map:
+            print(f"[Debug] Full keymap: {key_map}")
+            return key_map
+        else:
+            return None
 
 
 def handle_note(key_map: dict, note, pressed=True):
-    related_key = key_map.get(note)
+    related_key = key_map.get(note) if key_map is not None else None
     
     if pressed:
         print("pressing:", note, ", simulating:", related_key)
         if related_key:
-            keyboard.press(related_key)
+            kb.press(related_key)
     else:
         print("releasing", note, ", simulating:", related_key)
         if related_key:
-            keyboard.release(related_key)
+            kb.release(related_key)
 
 if __name__ == '__main__':
     main()
