@@ -44,7 +44,7 @@ update_readme() {
     echo -e "# $name\n\n## Summary\n" > $proj_readme
 
     # Update repo readme
-    echo -e "\n## [$name](./$name/README.md)" >> $repo_readme
+    echo -e "\n- [$name](./$name/README.md) (Pending)" >> $repo_readme
 }
 
 while [[ "$#" -gt 0 ]]; do
@@ -53,16 +53,18 @@ while [[ "$#" -gt 0 ]]; do
             lang="$2"
             shift
             ;;
+        -n|--name)
+            name="$2"
+            shift
+            ;;
         --)
             is_tool_args=true
             shift
             break
             ;;
         *)
-            # Problematic, but it's fine...
-            # It's a backup way to specify name for other languages,
-            # which is not implemented anyway.
-            if [[ -z $name ]]; then
+            # Taking the first none "--"-prefixed arg as name
+            if [[ ! $1 == "--"* && -z $name ]]; then
                 name="$1"
             elif [[ $is_tool_args == false ]]; then
                 echo "Unknown argument: $1"
