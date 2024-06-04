@@ -1,3 +1,9 @@
 # Rust specific
 Cargo.lock
 target/
+
+# Python specific
+__pycache__
+
+# Project cache
+cache/

@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 
+from game_launcher import launch_game
+
+
 def main():
-    print('Hello World!')
+    launch_game()
 
 
 if __name__ == '__main__':
