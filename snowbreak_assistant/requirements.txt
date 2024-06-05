@@ -1,0 +1,8 @@
+# Handle screenshot and automation
+pyautogui
+# Required by `pyautogui`
+pyscreeze
+pygetwindow
+
+# Just openCV
+opencv-python
