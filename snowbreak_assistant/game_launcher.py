@@ -11,8 +11,9 @@ import pyautogui
 import pyscreeze
 import pygetwindow
 
-# TODO: include language setting
+
 class LauncherConfig():
+    # TODO: include language setting
     # Emmm, currently only the path to executable is needed, but maybe there will be
     # more things to configurate in the future? Anyway, I'll just keep it as a class for now.
     def __init__(self, launcher_path):
@@ -28,10 +29,12 @@ def working_dir(*paths) -> str:
         res = path.join(res, sub)
     return res
 
+
 # TODO: move these to a separated module, so it can be statically accessed
 cache_dir = working_dir("cache")
 data_dir = working_dir("data")
 localization = "zh_cn"
+
 
 def get_launcher_exe_path() -> str:
     """
@@ -79,7 +82,7 @@ def launch_game():
     # It re-run this script with admin rights, but why `> 32`? I have no idea
     if not ctypes.windll.shell32.IsUserAnAdmin() and ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, " ".join(sys.argv), None, 1) > 32:
         exit()
-    
+
     # This is actually starting the game launcher, not the game itself.
     # We still need to autoclick the `start` button to launch the game.
     subprocess.Popen([exe_path])
@@ -88,7 +91,8 @@ def launch_game():
     # Load window title names
     with open(path.join(localization_dir, "local.json"), "r", encoding="utf8") as i18n_file:
         # TODO: Create a class for this
-        config = json.loads(i18n_file.read(), object_hook=lambda d: SimpleNamespace(**d))
+        config = json.loads(
+            i18n_file.read(), object_hook=lambda d: SimpleNamespace(**d))
         launcher_title = config.launcher_title
         game_title = config.game_title
 
@@ -96,7 +100,8 @@ def launch_game():
     while start_btn_loc is None:
         try:
             # TODO: Can we get the pop-up window instead of searching on the whole screen?
-            start_btn_loc = pyautogui.locateOnWindow(path.join(localization_dir, "start_game.png"), launcher_title, confidence=0.9)
+            start_btn_loc = pyautogui.locateOnWindow(
+                path.join(localization_dir, "start_game.png"), launcher_title, confidence=0.9)
             if start_btn_loc is not None:
                 x, y = pyautogui.center(start_btn_loc)
                 pyautogui.click(x, y)
