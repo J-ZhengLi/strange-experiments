@@ -34,6 +34,7 @@ def working_dir(*paths) -> str:
 cache_dir = working_dir("cache")
 data_dir = working_dir("data")
 localization = "zh_cn"
+localization_dir = path.join(data_dir, localization)
 
 
 def get_launcher_exe_path() -> str:
@@ -87,7 +88,6 @@ def launch_game():
     # We still need to autoclick the `start` button to launch the game.
     subprocess.Popen([exe_path])
 
-    localization_dir = path.join(data_dir, localization)
     # Load window title names
     with open(path.join(localization_dir, "local.json"), "r", encoding="utf8") as i18n_file:
         # TODO: Create a class for this
@@ -99,7 +99,6 @@ def launch_game():
     start_btn_loc = None
     while start_btn_loc is None:
         try:
-            # TODO: Can we get the pop-up window instead of searching on the whole screen?
             start_btn_loc = pyautogui.locateOnWindow(
                 path.join(localization_dir, "start_game.png"), launcher_title, confidence=0.9)
             if start_btn_loc is not None:
