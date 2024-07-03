@@ -9,6 +9,20 @@ is_tool_args=false
 
 par_dir=$(dirname "$0")
 
+SUPPORTED_LANGS=('python' 'rust')
+
+show_help() {
+    cat 1>&2 << EOF
+Usage:
+    $0 <OPTIONS> [NAME]
+
+Options:
+    -l|--lang: Create a project with specific language template. [${SUPPORTED_LANGS[@]}](default: $lang)
+    -n|--name: Alternative option to provide a project name.
+    -h|--help: Show this help message.
+EOF
+}
+
 cargo_new() {
     # Make sure to create project in the same directory as this script
     cd $par_dir
@@ -47,6 +61,9 @@ update_readme() {
     echo -e "\n- [$name](./$name/README.md) (Pending)" >> $repo_readme
 }
 
+# Print help then exit peacefully when there's no args provided
+[[ "$#" -le 0 ]] && show_help && exit 0
+
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         -l|--lang)
@@ -56,6 +73,10 @@ while [[ "$#" -gt 0 ]]; do
         -n|--name)
             name="$2"
             shift
+            ;;
+        -h|--help)
+            show_help
+            exit 0
             ;;
         --)
             is_tool_args=true
